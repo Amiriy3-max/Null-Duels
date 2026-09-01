@@ -1,0 +1,426 @@
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Stats = game:GetService("Stats")
+local lp = Players.LocalPlayer
+
+local STEAL_RADIUS = 60
+local STEAL_DURATION = 1.3
+local isStealing = false
+local StealData = {}
+
+local progressBarBg = nil
+local progressFill = nil
+local percentLabel = nil
+local bannerFrame = nil
+local infoLabel = nil
+
+local function updateTopBar()
+    if not infoLabel then return end
+
+    local fps = 60
+    local ping = 0
+    local framesCount = 0
+    local last = tick()
+
+    RunService.RenderStepped:Connect(function()
+        framesCount = framesCount + 1
+
+        if tick() - last >= 1 then
+            fps = framesCount
+            framesCount = 0
+            last = tick()
+        end
+
+        local network = Stats:FindFirstChild("Network")
+        if network and network:FindFirstChild("ServerStatsItem") then
+            local dataPing = network.ServerStatsItem:FindFirstChild("Data Ping")
+            if dataPing then
+                ping = math.floor(dataPing:GetValue())
+            end
+        end
+
+        infoLabel.Text =
+            "Null Hub | Ping: " .. ping .. "ms | FPS: " .. fps
+    end)
+end
+
+local function createSettingsMenu(sg, settingsButton)
+
+    local settingsFrame = Instance.new("Frame")
+    settingsFrame.Name = "SettingsMenu"
+    settingsFrame.Size = UDim2.new(0, 180, 0, 75)
+    settingsFrame.Position = UDim2.new(0.5, 135, 0, 70)
+    settingsFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    settingsFrame.BackgroundTransparency = 0.05
+    settingsFrame.BorderSizePixel = 0
+    settingsFrame.Visible = false
+    settingsFrame.ZIndex = 10
+    settingsFrame.Parent = sg
+
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 8)
+    corner.Parent = settingsFrame
+
+    local stroke = Instance.new("UIStroke")
+    stroke.Color = Color3.fromRGB(50, 50, 50)
+    stroke.Thickness = 1
+    stroke.Parent = settingsFrame
+
+    local radiusLabel = Instance.new("TextLabel")
+    radiusLabel.Size = UDim2.new(0, 80, 0, 35)
+    radiusLabel.Position = UDim2.new(0, 10, 0, 20)
+    radiusLabel.BackgroundTransparency = 1
+    radiusLabel.Text = "RADIUS"
+    radiusLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    radiusLabel.Font = Enum.Font.GothamBold
+    radiusLabel.TextSize = 14
+    radiusLabel.TextXAlignment = Enum.TextXAlignment.Left
+    radiusLabel.ZIndex = 11
+    radiusLabel.Parent = settingsFrame
+
+    local radiusBox = Instance.new("TextBox")
+    radiusBox.Name = "RadiusBox"
+    radiusBox.Size = UDim2.new(0, 65, 0, 32)
+    radiusBox.Position = UDim2.new(1, -75, 0, 17)
+    radiusBox.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+    radiusBox.BorderSizePixel = 0
+    radiusBox.Text = tostring(STEAL_RADIUS)
+    radiusBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+    radiusBox.Font = Enum.Font.GothamBold
+    radiusBox.TextSize = 14
+    radiusBox.ClearTextOnFocus = false
+    radiusBox.ZIndex = 11
+    radiusBox.Parent = settingsFrame
+
+    local boxCorner = Instance.new("UICorner")
+    boxCorner.CornerRadius = UDim.new(0, 6)
+    boxCorner.Parent = radiusBox
+
+    radiusBox.FocusLost:Connect(function()
+        local value = tonumber(radiusBox.Text)
+
+        if value then
+            value = math.clamp(math.floor(value), 10, 80)
+            STEAL_RADIUS = value
+            radiusBox.Text = tostring(value)
+        else
+            radiusBox.Text = tostring(STEAL_RADIUS)
+        end
+    end)
+
+    settingsButton.MouseButton1Click:Connect(function()
+        settingsFrame.Visible = not settingsFrame.Visible
+    end)
+end
+
+local function setupUI()
+
+    local sg = lp.PlayerGui:FindFirstChild("J hub ")
+
+    if not sg then
+        sg = Instance.new("ScreenGui")
+        sg.Name = "J hub "
+        sg.ResetOnSpawn = false
+        sg.Parent = lp.PlayerGui
+    end
+
+    if progressBarBg then return end
+
+    local container = Instance.new("Frame")
+    container.Name = "MainContainer"
+    container.Size = UDim2.new(0, 260, 0, 70)
+    container.Position = UDim2.new(0.5, -130, 0, 35)
+    container.BackgroundTransparency = 1
+    container.Parent = sg
+
+    -- TOP BAR
+    bannerFrame = Instance.new("Frame")
+    bannerFrame.Size = UDim2.new(1, 0, 0, 30)
+    bannerFrame.Position = UDim2.new(0, 0, 0, 0)
+    bannerFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    bannerFrame.BackgroundTransparency = 0.15
+    bannerFrame.BorderSizePixel = 0
+    bannerFrame.Parent = container
+
+    local bannerCorner = Instance.new("UICorner")
+    bannerCorner.CornerRadius = UDim.new(0, 8)
+    bannerCorner.Parent = bannerFrame
+
+    -- QORA CHIZIQ
+    local bannerStroke = Instance.new("UIStroke")
+    bannerStroke.Color = Color3.fromRGB(0, 0, 0)
+    bannerStroke.Thickness = 1.5
+    bannerStroke.Parent = bannerFrame
+
+    infoLabel = Instance.new("TextLabel")
+    infoLabel.Size = UDim2.new(1, -40, 1, 0)
+    infoLabel.Position = UDim2.new(0, 0, 0, 0)
+    infoLabel.BackgroundTransparency = 1
+    infoLabel.Font = Enum.Font.GothamBold
+    infoLabel.TextSize = 14
+    infoLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    infoLabel.Text = "Null Hub | Ping: 0ms | FPS: 0"
+    infoLabel.TextXAlignment = Enum.TextXAlignment.Center
+    infoLabel.Parent = bannerFrame
+
+    -- SETTINGS KNOPKA
+    local settingsButton = Instance.new("TextButton")
+    settingsButton.Name = "SettingsButton"
+    settingsButton.Size = UDim2.new(0, 30, 0, 30)
+    settingsButton.Position = UDim2.new(1, 5, 0, 0)
+    settingsButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    settingsButton.BackgroundTransparency = 0.1
+    settingsButton.BorderSizePixel = 0
+    settingsButton.Text = "⚙️"
+    settingsButton.TextSize = 17
+    settingsButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    settingsButton.Parent = container
+
+    local settingsCorner = Instance.new("UICorner")
+    settingsCorner.CornerRadius = UDim.new(0, 8)
+    settingsCorner.Parent = settingsButton
+
+    -- PROGRESS BAR
+    progressBarBg = Instance.new("Frame")
+    progressBarBg.Size = UDim2.new(1, 0, 0, 14)
+    progressBarBg.Position = UDim2.new(0, 0, 0, 34)
+    progressBarBg.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    progressBarBg.BackgroundTransparency = 0.1
+    progressBarBg.BorderSizePixel = 0
+    progressBarBg.Visible = true
+    progressBarBg.Parent = container
+
+    local progressCorner = Instance.new("UICorner")
+    progressCorner.CornerRadius = UDim.new(0, 10)
+    progressCorner.Parent = progressBarBg
+
+    -- QORA PROGRESS
+    progressFill = Instance.new("Frame")
+    progressFill.Size = UDim2.new(0, 0, 1, 0)
+    progressFill.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    progressFill.BorderSizePixel = 0
+    progressFill.Parent = progressBarBg
+
+    local fillCorner = Instance.new("UICorner")
+    fillCorner.CornerRadius = UDim.new(0, 10)
+    fillCorner.Parent = progressFill
+
+    percentLabel = Instance.new("TextLabel")
+    percentLabel.Size = UDim2.new(1, 0, 1, 0)
+    percentLabel.BackgroundTransparency = 1
+    percentLabel.Font = Enum.Font.GothamBold
+    percentLabel.TextSize = 11
+    percentLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
+    percentLabel.Text = "0%"
+    percentLabel.Parent = progressBarBg
+
+    createSettingsMenu(sg, settingsButton)
+    updateTopBar()
+end
+
+local function getHRP()
+    local c = lp.Character
+
+    if c then
+        return c:FindFirstChild("HumanoidRootPart")
+            or c:FindFirstChild("Torso")
+            or c:FindFirstChild("UpperTorso")
+    end
+
+    return nil
+end
+
+local function isMyPlotByName(pn)
+    local plots = workspace:FindFirstChild("Plots")
+    if not plots then return false end
+
+    local plot = plots:FindFirstChild(pn)
+    if not plot then return false end
+
+    local sign = plot:FindFirstChild("PlotSign")
+
+    if sign then
+        local yb = sign:FindFirstChild("YourBase")
+
+        if yb and yb:IsA("BillboardGui") then
+            return yb.Enabled == true
+        end
+    end
+
+    return false
+end
+
+local function findNearestPrompt()
+    local hrp = getHRP()
+    if not hrp then return nil end
+
+    local plots = workspace:FindFirstChild("Plots")
+    if not plots then return nil end
+
+    local nearest, dist = nil, math.huge
+
+    for _, plot in ipairs(plots:GetChildren()) do
+
+        if isMyPlotByName(plot.Name) then
+            continue
+        end
+
+        local pods = plot:FindFirstChild("AnimalPodiums")
+        if not pods then
+            continue
+        end
+
+        for _, pod in ipairs(pods:GetChildren()) do
+
+            local base = pod:FindFirstChild("Base")
+            if not base then
+                continue
+            end
+
+            local spawn = base:FindFirstChild("Spawn")
+            if not spawn then
+                continue
+            end
+
+            local d = (spawn.Position - hrp.Position).Magnitude
+
+            if d <= STEAL_RADIUS and d < dist then
+
+                local att = spawn:FindFirstChild("PromptAttachment")
+
+                if att then
+                    for _, p in ipairs(att:GetChildren()) do
+
+                        if p:IsA("ProximityPrompt")
+                            and p.ActionText
+                            and p.ActionText:find("Steal") then
+
+                            nearest = p
+                            dist = d
+                        end
+
+                    end
+                end
+
+            end
+        end
+    end
+
+    return nearest
+end
+
+local function updateProgressBar(p)
+
+    if progressFill then
+        progressFill.Size = UDim2.new(p, 0, 1, 0)
+    end
+
+    if percentLabel then
+        percentLabel.Text = math.floor(p * 100) .. "%"
+    end
+end
+
+local function executeSteal(prompt)
+
+    if isStealing then return end
+
+    if not StealData[prompt] then
+
+        StealData[prompt] = {
+            hold = {},
+            trigger = {},
+            ready = true
+        }
+
+        if getconnections then
+
+            for _, c in ipairs(getconnections(prompt.PromptButtonHoldBegan)) do
+                if c.Function then
+                    table.insert(StealData[prompt].hold, c.Function)
+                end
+            end
+
+            for _, c in ipairs(getconnections(prompt.Triggered)) do
+                if c.Function then
+                    table.insert(StealData[prompt].trigger, c.Function)
+                end
+            end
+
+        end
+    end
+
+    local data = StealData[prompt]
+
+    if not data.ready then return end
+
+    data.ready = false
+    isStealing = true
+
+    local startTime = tick()
+
+    task.spawn(function()
+
+        for _, f in ipairs(data.hold) do
+            pcall(f)
+        end
+
+        while tick() - startTime < STEAL_DURATION do
+
+            local elapsed = tick() - startTime
+            local p = math.clamp(
+                elapsed / STEAL_DURATION,
+                0,
+                1
+            )
+
+            updateProgressBar(p)
+            task.wait()
+        end
+
+        updateProgressBar(1)
+
+        for _, f in ipairs(data.trigger) do
+            pcall(f)
+        end
+
+        task.wait(0.05)
+
+        updateProgressBar(0)
+
+        data.ready = true
+        isStealing = false
+    end)
+end
+
+local heartbeatConn
+
+local function startAutoSteal()
+
+    setupUI()
+
+    if heartbeatConn then return end
+
+    heartbeatConn = RunService.Heartbeat:Connect(function()
+
+        if isStealing then return end
+
+        local success, prompt = pcall(findNearestPrompt)
+
+        if success and prompt then
+            pcall(executeSteal, prompt)
+        end
+    end)
+end
+
+local function stopAutoSteal()
+
+    if heartbeatConn then
+        heartbeatConn:Disconnect()
+        heartbeatConn = nil
+    end
+
+    isStealing = false
+    updateProgressBar(0)
+end
+
+startAutoSteal()
