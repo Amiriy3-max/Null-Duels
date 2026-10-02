@@ -1,0 +1,612 @@
+-- NULL MUSIC PANEL (Clean Version)
+-- Works with most executors that have getcustomasset / writefile / HttpGet
+
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local HttpService = game:GetService("HttpService")
+
+local LocalPlayer = Players.LocalPlayer
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+
+-- Settings
+local Settings = {
+	MusicSpeed = 1,
+	UIScale = 1,
+	Volume = 0.6
+}
+
+-- Track list
+local Tracks = {
+	{ name = "vyzee we go up",        url = "https://files.catbox.moe/bvpw7w.mp3", file = "vyzee.mp3" },
+	{ name = "balenciaga",            url = "https://files.catbox.moe/n6mu6i.mp3", file = "balenciaga.mp3" },
+	{ name = "du bist gut genug",               url = "https://files.catbox.moe/dwjk76.mp3", file = "dubist.mp3" },
+	{ name = "king nasir",            url = "https://files.catbox.moe/dkci4j.mp3", file = "kingnasir.mp3" },
+	{ name = "blue bands",            url = "https://files.catbox.moe/3g99za.mp3", file = "bluebands.mp3" },
+	{ name = "cool for the summer",   url = "https://files.catbox.moe/wymx4d.mp3", file = "coolforthesummer.mp3" },
+	{ name = "cinderella",            url = "https://files.catbox.moe/uvkpzb.mp3", file = "cinderella.mp3" },
+	{ name = "ghetto love story",     url = "https://files.catbox.moe/tqunbw.mp3", file = "ghettolovestory.mp3" },
+	{ name = "raya phonk",                  url = "https://files.catbox.moe/uf7506.mp3", file = "raya.mp3" },
+	{ name = "borro700",              url = "https://files.catbox.moe/095uyy.mp3", file = "borro700.mp3" },
+	{ name = "borro700 saisai",       url = "https://files.catbox.moe/p15pre.mp3", file = "borro700saisai.mp3" },
+	{ name = "saisai",                url = "https://files.catbox.moe/xj48yn.mp3", file = "saisai.mp3" },
+	{ name = "hem",                   url = "https://files.catbox.moe/1p1z83.mp3", file = "hem.mp3" },
+}
+
+-- Helpers
+local function getAssetFunction()
+	return getcustomasset or getsynasset
+end
+
+local function getParent()
+	if gethui then
+		local ok, result = pcall(gethui)
+		if ok and result then return result end
+	end
+	return PlayerGui
+end
+
+local function makeDraggable(frame, handle)
+	local dragging = false
+	local dragStart, startPos
+
+	handle.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+			dragging = true
+			dragStart = input.Position
+			startPos = frame.Position
+
+			input.Changed:Connect(function()
+				if input.UserInputState == Enum.UserInputState.End then
+					dragging = false
+				end
+			end)
+		end
+	end)
+
+	UserInputService.InputChanged:Connect(function(input)
+		if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+			local delta = input.Position - dragStart
+			frame.Position = UDim2.new(
+				startPos.X.Scale,
+				startPos.X.Offset + delta.X,
+				startPos.Y.Scale,
+				startPos.Y.Offset + delta.Y
+			)
+		end
+	end)
+end
+
+local function clampSpeed(value)
+	value = tonumber(value) or 1
+	return math.clamp(math.floor(value * 10 + 0.5) / 10, 0.5, 2)
+end
+
+local function clampScale(value)
+	value = tonumber(value) or 1
+	return math.clamp(math.floor(value * 20 + 0.5) / 20, 0.7, 1.5)
+end
+
+-- Main GUI
+local function createMusicPanel()
+	local parent = getParent()
+
+	-- Remove old one if exists
+	local old = parent:FindFirstChild("RestreintMusicPanel")
+	if old then old:Destroy() end
+
+	local screenGui = Instance.new("ScreenGui")
+	screenGui.Name = "RestreintMusicPanel"
+	screenGui.ResetOnSpawn = false
+	screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Global
+	screenGui.DisplayOrder = 9999
+	screenGui.IgnoreGuiInset = true
+	screenGui.Parent = parent
+
+	-- Main Frame
+	local mainFrame = Instance.new("Frame")
+	mainFrame.Name = "MainFrame"
+	mainFrame.Size = UDim2.new(0, 320, 0, 348)
+	mainFrame.Position = UDim2.new(0.5, -160, 0.5, -174)
+	mainFrame.BackgroundColor3 = Color3.fromRGB(11, 9, 20)
+	mainFrame.BackgroundTransparency = 0.08
+	mainFrame.BorderSizePixel = 0
+	mainFrame.Active = true
+	mainFrame.ClipsDescendants = true
+	mainFrame.Parent = screenGui
+
+	Instance.new("UICorner", mainFrame).CornerRadius = UDim.new(0, 14)
+
+	local uiScale = Instance.new("UIScale")
+	uiScale.Name = "PanelScale"
+	uiScale.Scale = clampScale(Settings.UIScale)
+	uiScale.Parent = mainFrame
+
+	-- Background image
+	local bg = Instance.new("ImageLabel")
+	bg.Name = "MusicBgImage"
+	bg.Size = UDim2.new(1, 0, 1, 0)
+	bg.Image = "rbxassetid://80739620761628"
+	bg.ImageTransparency = 0.25
+	bg.ScaleType = Enum.ScaleType.Crop
+	bg.BackgroundTransparency = 1
+	bg.ZIndex = 1
+	bg.Parent = mainFrame
+	Instance.new("UICorner", bg).CornerRadius = UDim.new(0, 14)
+
+	local stroke = Instance.new("UIStroke")
+	stroke.Thickness = 1.4
+	stroke.Color = Color3.fromRGB(255, 255, 255)
+	stroke.Transparency = 0.3
+	stroke.Parent = mainFrame
+
+	-- Title bar
+	local titleBar = Instance.new("Frame")
+	titleBar.Size = UDim2.new(1, 0, 0, 36)
+	titleBar.BackgroundColor3 = Color3.fromRGB(16, 13, 26)
+	titleBar.BackgroundTransparency = 0.3
+	titleBar.BorderSizePixel = 0
+	titleBar.ZIndex = 2
+	titleBar.Parent = mainFrame
+	Instance.new("UICorner", titleBar).CornerRadius = UDim.new(0, 14)
+
+	local accent = Instance.new("Frame")
+	accent.Size = UDim2.new(0, 7, 0, 18)
+	accent.Position = UDim2.new(0, 14, 0.5, -9)
+	accent.BackgroundColor3 = Color3.fromRGB(0, 255, 255)
+	accent.BorderSizePixel = 0
+	accent.ZIndex = 3
+	accent.Parent = titleBar
+	Instance.new("UICorner", accent).CornerRadius = UDim.new(1, 0)
+
+	local title = Instance.new("TextLabel")
+	title.Size = UDim2.new(1, -100, 1, 0)
+	title.Position = UDim2.new(0, 28, 0, 0)
+	title.BackgroundTransparency = 1
+	title.Text = "NULL MUSICS"
+	title.TextColor3 = Color3.fromRGB(255, 255, 255)
+	title.Font = Enum.Font.GothamBlack
+	title.TextSize = 13
+	title.TextXAlignment = Enum.TextXAlignment.Left
+	title.ZIndex = 3
+	title.Parent = titleBar
+
+	-- Close button
+	local closeBtn = Instance.new("TextButton")
+	closeBtn.Size = UDim2.new(0, 26, 0, 26)
+	closeBtn.Position = UDim2.new(1, -32, 0.5, -13)
+	closeBtn.BackgroundColor3 = Color3.fromRGB(40, 20, 40)
+	closeBtn.Text = "X"
+	closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+	closeBtn.Font = Enum.Font.GothamBold
+	closeBtn.TextSize = 14
+	closeBtn.ZIndex = 4
+	closeBtn.Parent = titleBar
+	Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0, 7)
+
+	-- Scale buttons
+	local scalePlus = Instance.new("TextButton")
+	scalePlus.Size = UDim2.new(0, 24, 0, 24)
+	scalePlus.Position = UDim2.new(1, -60, 0.5, -12)
+	scalePlus.BackgroundColor3 = Color3.fromRGB(24, 20, 38)
+	scalePlus.Text = "+"
+	scalePlus.TextColor3 = Color3.fromRGB(255, 255, 255)
+	scalePlus.Font = Enum.Font.GothamBlack
+	scalePlus.TextSize = 14
+	scalePlus.ZIndex = 4
+	scalePlus.Parent = titleBar
+	Instance.new("UICorner", scalePlus).CornerRadius = UDim.new(0, 6)
+
+	local scaleMinus = Instance.new("TextButton")
+	scaleMinus.Size = UDim2.new(0, 24, 0, 24)
+	scaleMinus.Position = UDim2.new(1, -88, 0.5, -12)
+	scaleMinus.BackgroundColor3 = Color3.fromRGB(24, 20, 38)
+	scaleMinus.Text = "-"
+	scaleMinus.TextColor3 = Color3.fromRGB(255, 255, 255)
+	scaleMinus.Font = Enum.Font.GothamBlack
+	scaleMinus.TextSize = 15
+	scaleMinus.ZIndex = 4
+	scaleMinus.Parent = titleBar
+	Instance.new("UICorner", scaleMinus).CornerRadius = UDim.new(0, 6)
+
+	makeDraggable(mainFrame, titleBar)
+
+	-- Sound
+	local sound = Instance.new("Sound")
+	sound.Name = "RestreintMusicSound"
+	sound.Volume = Settings.Volume
+	sound.PlaybackSpeed = clampSpeed(Settings.MusicSpeed)
+	sound.Parent = screenGui
+
+	-- Cache
+	local assetCache = {}
+	local loaded = {}
+
+	local function loadTrack(track)
+		if loaded[track.file] and assetCache[track.file] then
+			return true, assetCache[track.file]
+		end
+
+		local success, result = pcall(function()
+			if not (isfile and isfile(track.file)) then
+				local data = game:HttpGet(track.url)
+				if writefile then
+					writefile(track.file, data)
+				end
+			end
+
+			local getAsset = getAssetFunction()
+			if not getAsset then
+				error("No getcustomasset / getsynasset")
+			end
+
+			local asset = getAsset(track.file)
+			assetCache[track.file] = asset
+			loaded[track.file] = true
+			return asset
+		end)
+
+		return success, result
+	end
+
+	-- Preload tracks in background
+	task.spawn(function()
+		for _, track in ipairs(Tracks) do
+			task.spawn(function()
+				loadTrack(track)
+			end)
+			task.wait(0.15)
+		end
+	end)
+
+	-- Scrolling list
+	local scroll = Instance.new("ScrollingFrame")
+	scroll.Size = UDim2.new(1, -20, 0, 180)
+	scroll.Position = UDim2.new(0, 10, 0, 46)
+	scroll.BackgroundTransparency = 1
+	scroll.BorderSizePixel = 0
+	scroll.ScrollBarThickness = 3
+	scroll.ScrollBarImageColor3 = Color3.fromRGB(0, 255, 255)
+	scroll.CanvasSize = UDim2.new(0, 0, 0, #Tracks * 40 + 10)
+	scroll.ZIndex = 2
+	scroll.Parent = mainFrame
+
+	local currentFile = nil
+	local playToken = 0
+	local selectedIndex = nil
+
+	local function highlight(index)
+		for i = 1, #Tracks do
+			local btn = scroll:FindFirstChild("MusicBtn" .. i)
+			if btn then
+				if i == index then
+					btn.BackgroundColor3 = Color3.fromRGB(55, 30, 70)
+					btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+				else
+					btn.BackgroundColor3 = Color3.fromRGB(16, 13, 26)
+					btn.TextColor3 = Color3.fromRGB(220, 200, 235)
+				end
+			end
+		end
+	end
+
+	local function playTrack(track, button, index)
+		playToken += 1
+		local token = playToken
+
+		-- Toggle off if same track is playing
+		if currentFile == track.file and sound.IsPlaying then
+			pcall(function() sound:Stop() end)
+			currentFile = nil
+			highlight(nil)
+			updateActiveButton(false)
+			return
+		end
+
+		if loaded[track.file] and assetCache[track.file] then
+			pcall(function() sound:Stop() end)
+			sound.SoundId = assetCache[track.file]
+			sound.PlaybackSpeed = clampSpeed(Settings.MusicSpeed)
+			sound:Play()
+			currentFile = track.file
+			selectedIndex = index
+			highlight(index)
+			updateActiveButton(true)
+			return
+		end
+
+		if button then
+			button.Text = "Loading..."
+		end
+
+		task.spawn(function()
+			local ok, asset = loadTrack(track)
+			if token ~= playToken then return end
+
+			if ok and asset then
+				pcall(function() sound:Stop() end)
+				sound.SoundId = asset
+				sound.PlaybackSpeed = clampSpeed(Settings.MusicSpeed)
+				sound:Play()
+				currentFile = track.file
+				selectedIndex = index
+				highlight(index)
+				updateActiveButton(true)
+			elseif button then
+				button.Text = "Failed"
+				task.wait(1.2)
+				if token == playToken and button:GetAttribute("OrigName") then
+					button.Text = button:GetAttribute("OrigName")
+				end
+			end
+		end)
+	end
+
+	for i, track in ipairs(Tracks) do
+		local btn = Instance.new("TextButton")
+		btn.Name = "MusicBtn" .. i
+		btn.Size = UDim2.new(1, -10, 0, 34)
+		btn.Position = UDim2.new(0, 5, 0, 5 + (i - 1) * 40)
+		btn.Text = track.name
+		btn:SetAttribute("OrigName", track.name)
+		btn.BackgroundColor3 = Color3.fromRGB(16, 13, 26)
+		btn.BackgroundTransparency = 0.25
+		btn.TextColor3 = Color3.fromRGB(220, 200, 235)
+		btn.Font = Enum.Font.GothamBold
+		btn.TextSize = 12
+		btn.ZIndex = 3
+		btn.Parent = scroll
+		Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 8)
+
+		local btnStroke = Instance.new("UIStroke")
+		btnStroke.Thickness = 1
+		btnStroke.Color = Color3.fromRGB(100, 80, 110)
+		btnStroke.Parent = btn
+
+		btn.MouseButton1Click:Connect(function()
+			playTrack(track, btn, i)
+		end)
+	end
+
+	sound.Ended:Connect(function()
+		highlight(nil)
+		currentFile = nil
+		updateActiveButton(false)
+	end)
+
+	-- Speed controls
+	local speedRow = Instance.new("Frame")
+	speedRow.Name = "SpeedRow"
+	speedRow.Size = UDim2.new(1, -20, 0, 36)
+	speedRow.Position = UDim2.new(0, 10, 0, 236)
+	speedRow.BackgroundColor3 = Color3.fromRGB(18, 14, 26)
+	speedRow.BackgroundTransparency = 0.25
+	speedRow.BorderSizePixel = 0
+	speedRow.ZIndex = 2
+	speedRow.Parent = mainFrame
+	Instance.new("UICorner", speedRow).CornerRadius = UDim.new(0, 8)
+
+	local speedLabel = Instance.new("TextLabel")
+	speedLabel.Size = UDim2.new(0, 52, 1, 0)
+	speedLabel.Position = UDim2.new(0, 8, 0, 0)
+	speedLabel.BackgroundTransparency = 1
+	speedLabel.Text = "SPEED"
+	speedLabel.TextColor3 = Color3.fromRGB(200, 200, 210)
+	speedLabel.Font = Enum.Font.GothamBlack
+	speedLabel.TextSize = 9
+	speedLabel.TextXAlignment = Enum.TextXAlignment.Left
+	speedLabel.ZIndex = 3
+	speedLabel.Parent = speedRow
+
+	local spdMinus = Instance.new("TextButton")
+	spdMinus.Size = UDim2.new(0, 26, 0, 26)
+	spdMinus.Position = UDim2.new(0, 58, 0.5, -13)
+	spdMinus.BackgroundColor3 = Color3.fromRGB(24, 20, 38)
+	spdMinus.Text = "-"
+	spdMinus.TextColor3 = Color3.fromRGB(0, 255, 255)
+	spdMinus.Font = Enum.Font.GothamBlack
+	spdMinus.TextSize = 15
+	spdMinus.ZIndex = 3
+	spdMinus.Parent = speedRow
+	Instance.new("UICorner", spdMinus).CornerRadius = UDim.new(0, 7)
+
+	local speedValue = Instance.new("TextLabel")
+	speedValue.Size = UDim2.new(1, -150, 0, 20)
+	speedValue.Position = UDim2.new(0, 90, 0.5, -10)
+	speedValue.BackgroundTransparency = 1
+	speedValue.Text = "100%"
+	speedValue.TextColor3 = Color3.fromRGB(0, 255, 255)
+	speedValue.Font = Enum.Font.GothamBlack
+	speedValue.TextSize = 13
+	speedValue.ZIndex = 3
+	speedValue.Parent = speedRow
+
+	local spdPlus = Instance.new("TextButton")
+	spdPlus.Size = UDim2.new(0, 26, 0, 26)
+	spdPlus.Position = UDim2.new(1, -36, 0.5, -13)
+	spdPlus.BackgroundColor3 = Color3.fromRGB(24, 20, 38)
+	spdPlus.Text = "+"
+	spdPlus.TextColor3 = Color3.fromRGB(255, 255, 255)
+	spdPlus.Font = Enum.Font.GothamBlack
+	spdPlus.TextSize = 15
+	spdPlus.ZIndex = 3
+	spdPlus.Parent = speedRow
+	Instance.new("UICorner", spdPlus).CornerRadius = UDim.new(0, 7)
+
+	local function updateSpeed()
+		Settings.MusicSpeed = clampSpeed(Settings.MusicSpeed)
+		sound.PlaybackSpeed = Settings.MusicSpeed
+		speedValue.Text = tostring(math.floor(Settings.MusicSpeed * 100 + 0.5)) .. "%"
+	end
+
+	spdMinus.MouseButton1Click:Connect(function()
+		Settings.MusicSpeed = clampSpeed(Settings.MusicSpeed - 0.1)
+		updateSpeed()
+	end)
+
+	spdPlus.MouseButton1Click:Connect(function()
+		Settings.MusicSpeed = clampSpeed(Settings.MusicSpeed + 0.1)
+		updateSpeed()
+	end)
+
+	-- Click the value to reset
+	local resetSpeed = Instance.new("TextButton")
+	resetSpeed.Size = UDim2.new(1, -150, 1, 0)
+	resetSpeed.Position = UDim2.new(0, 90, 0, 0)
+	resetSpeed.BackgroundTransparency = 1
+	resetSpeed.Text = ""
+	resetSpeed.ZIndex = 4
+	resetSpeed.Parent = speedRow
+	resetSpeed.MouseButton1Click:Connect(function()
+		Settings.MusicSpeed = 1
+		updateSpeed()
+	end)
+
+	updateSpeed()
+
+	-- Volume controls
+	local volRow = Instance.new("Frame")
+	volRow.Name = "VolumeRow"
+	volRow.Size = UDim2.new(1, -20, 0, 36)
+	volRow.Position = UDim2.new(0, 10, 0, 276)
+	volRow.BackgroundColor3 = Color3.fromRGB(18, 14, 26)
+	volRow.BackgroundTransparency = 0.25
+	volRow.BorderSizePixel = 0
+	volRow.ZIndex = 2
+	volRow.Parent = mainFrame
+	Instance.new("UICorner", volRow).CornerRadius = UDim.new(0, 8)
+
+	local volLabel = Instance.new("TextLabel")
+	volLabel.Size = UDim2.new(0, 52, 1, 0)
+	volLabel.Position = UDim2.new(0, 8, 0, 0)
+	volLabel.BackgroundTransparency = 1
+	volLabel.Text = "VOLUME"
+	volLabel.TextColor3 = Color3.fromRGB(200, 200, 210)
+	volLabel.Font = Enum.Font.GothamBlack
+	volLabel.TextSize = 9
+	volLabel.TextXAlignment = Enum.TextXAlignment.Left
+	volLabel.ZIndex = 3
+	volLabel.Parent = volRow
+
+	local volMinus = Instance.new("TextButton")
+	volMinus.Size = UDim2.new(0, 26, 0, 26)
+	volMinus.Position = UDim2.new(0, 58, 0.5, -13)
+	volMinus.BackgroundColor3 = Color3.fromRGB(24, 20, 38)
+	volMinus.Text = "-"
+	volMinus.TextColor3 = Color3.fromRGB(255, 255, 255)
+	volMinus.Font = Enum.Font.GothamBlack
+	volMinus.TextSize = 14
+	volMinus.ZIndex = 3
+	volMinus.Parent = volRow
+	Instance.new("UICorner", volMinus).CornerRadius = UDim.new(0, 7)
+
+	local volValue = Instance.new("TextLabel")
+	volValue.Size = UDim2.new(1, -150, 0, 20)
+	volValue.Position = UDim2.new(0, 90, 0.5, -10)
+	volValue.BackgroundTransparency = 1
+	volValue.Text = "60%"
+	volValue.TextColor3 = Color3.fromRGB(255, 0, 255)
+	volValue.Font = Enum.Font.GothamBlack
+	volValue.TextSize = 13
+	volValue.ZIndex = 3
+	volValue.Parent = volRow
+
+	local volPlus = Instance.new("TextButton")
+	volPlus.Size = UDim2.new(0, 26, 0, 26)
+	volPlus.Position = UDim2.new(1, -36, 0.5, -13)
+	volPlus.BackgroundColor3 = Color3.fromRGB(24, 20, 38)
+	volPlus.Text = "+"
+	volPlus.TextColor3 = Color3.fromRGB(255, 255, 255)
+	volPlus.Font = Enum.Font.GothamBlack
+	volPlus.TextSize = 15
+	volPlus.ZIndex = 3
+	volPlus.Parent = volRow
+	Instance.new("UICorner", volPlus).CornerRadius = UDim.new(0, 7)
+
+	local function updateVolume()
+		sound.Volume = math.clamp(sound.Volume, 0, 1)
+		volValue.Text = tostring(math.floor(sound.Volume * 100 + 0.5)) .. "%"
+	end
+
+	volMinus.MouseButton1Click:Connect(function()
+		sound.Volume = math.clamp(sound.Volume - 0.1, 0, 1)
+		updateVolume()
+	end)
+
+	volPlus.MouseButton1Click:Connect(function()
+		sound.Volume = math.clamp(sound.Volume + 0.1, 0, 1)
+		updateVolume()
+	end)
+
+	updateVolume()
+
+	-- Active / Stop button
+	local activeBtn = Instance.new("TextButton")
+	activeBtn.Size = UDim2.new(1, -20, 0, 28)
+	activeBtn.Position = UDim2.new(0, 10, 0, 316)
+	activeBtn.Text = "ACTIVE MUSIC"
+	activeBtn.BackgroundColor3 = Color3.fromRGB(18, 48, 32)
+	activeBtn.TextColor3 = Color3.fromRGB(140, 255, 190)
+	activeBtn.Font = Enum.Font.GothamBold
+	activeBtn.TextSize = 12
+	activeBtn.ZIndex = 3
+	activeBtn.Parent = mainFrame
+	Instance.new("UICorner", activeBtn).CornerRadius = UDim.new(0, 8)
+
+	local activeStroke = Instance.new("UIStroke")
+	activeStroke.Thickness = 1
+	activeStroke.Color = Color3.fromRGB(40, 90, 55)
+	activeStroke.Parent = activeBtn
+
+	function updateActiveButton(playing)
+		if playing then
+			activeBtn.Text = "STOP MUSIC"
+			activeBtn.BackgroundColor3 = Color3.fromRGB(48, 18, 32)
+			activeBtn.TextColor3 = Color3.fromRGB(255, 180, 180)
+			activeStroke.Color = Color3.fromRGB(80, 25, 45)
+		else
+			activeBtn.Text = "ACTIVE MUSIC"
+			activeBtn.BackgroundColor3 = Color3.fromRGB(18, 48, 32)
+			activeBtn.TextColor3 = Color3.fromRGB(140, 255, 190)
+			activeStroke.Color = Color3.fromRGB(40, 90, 55)
+		end
+	end
+
+	local function togglePlay()
+		if sound.IsPlaying then
+			pcall(function() sound:Stop() end)
+			currentFile = nil
+			highlight(nil)
+			updateActiveButton(false)
+			return
+		end
+
+		local track = Tracks[selectedIndex or 1]
+		if track then
+			playTrack(track, scroll:FindFirstChild("MusicBtn" .. (selectedIndex or 1)), selectedIndex or 1)
+		end
+	end
+
+	activeBtn.MouseButton1Click:Connect(togglePlay)
+
+	-- Scale buttons logic
+	scalePlus.MouseButton1Click:Connect(function()
+		Settings.UIScale = clampScale(Settings.UIScale + 0.05)
+		uiScale.Scale = Settings.UIScale
+	end)
+
+	scaleMinus.MouseButton1Click:Connect(function()
+		Settings.UIScale = clampScale(Settings.UIScale - 0.05)
+		uiScale.Scale = Settings.UIScale
+	end)
+
+	-- Close → hide main, show float bar (optional, can just destroy)
+	closeBtn.MouseButton1Click:Connect(function()
+		mainFrame.Visible = false
+		-- You can add a float bar here if you want
+	end)
+
+	return screenGui
+end
+
+-- Run it
+createMusicPanel()
