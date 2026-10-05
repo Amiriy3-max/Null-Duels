@@ -1,0 +1,925 @@
+--// NULL MUSIC V7 (FIXED MINI MENU & REMOVED BROKEN SONGS)
+
+repeat task.wait() until game:IsLoaded()
+
+local Players = game:GetService("Players")
+local UIS = game:GetService("UserInputService")
+local SoundService = game:GetService("SoundService")
+local TweenService = game:GetService("TweenService")
+
+local Player = Players.LocalPlayer
+
+--==================================================
+-- COLORS
+--==================================================
+
+local RED = Color3.fromRGB(255, 35, 55)
+local RED2 = Color3.fromRGB(125, 8, 22)
+local BLACK = Color3.fromRGB(5, 5, 8)
+local DARK = Color3.fromRGB(10, 10, 14)
+local DARK2 = Color3.fromRGB(17, 17, 22)
+local WHITE = Color3.fromRGB(240, 240, 245)
+
+local GREEN = Color3.fromRGB(0, 255, 80)
+local YELLOW = Color3.fromRGB(255, 210, 0)
+
+--==================================================
+-- SETTINGS
+--==================================================
+
+local Locked = false
+local CurrentTab = "SONGS"
+local CurrentIndex = 1
+local Playing = false
+
+--==================================================
+-- TRACK LIST (MISERY va URANIUM PHONK olib tashlandi)
+--==================================================
+
+local Music = {
+	SONGS = {
+		{Name = "du bist",               Url = "https://files.catbox.moe/dwjk76.mp3", AssetId = ""},
+		{Name = "vyzee we go up",        Url = "https://files.catbox.moe/bvpw7w.mp3", AssetId = ""},
+		{Name = "balenciaga",            Url = "https://files.catbox.moe/n6mu6i.mp3", AssetId = ""},
+		{Name = "king nasir",            Url = "https://files.catbox.moe/dkci4j.mp3", AssetId = ""},
+		{Name = "blue bands",            Url = "https://files.catbox.moe/3g99za.mp3", AssetId = ""},
+		{Name = "cool for the summer",   Url = "https://files.catbox.moe/wymx4d.mp3", AssetId = ""},
+		{Name = "cinderella",            Url = "https://files.catbox.moe/uvkpzb.mp3", AssetId = ""},
+		{Name = "ghetto love story",     Url = "https://files.catbox.moe/tqunbw.mp3", AssetId = ""},
+		{Name = "borro700",              Url = "https://files.catbox.moe/095uyy.mp3", AssetId = ""},
+		{Name = "borro700 saisai",       Url = "https://files.catbox.moe/p15pre.mp3", AssetId = ""},
+		{Name = "saisai",                Url = "https://files.catbox.moe/xj48yn.mp3", AssetId = ""},
+		{Name = "hem",                   Url = "https://files.catbox.moe/1p1z83.mp3", AssetId = ""},
+	},
+
+	PHONKS = {
+		{Name = "RAYA PHONK",            Url = "https://files.catbox.moe/uf7506.mp3", AssetId = ""},
+	},
+
+	ASMR = {
+		{Name = "ASMR 1",                Url = "", AssetId = ""},
+	}
+}
+
+--==================================================
+-- REMOVE OLD GUI
+--==================================================
+
+local Old = Player.PlayerGui:FindFirstChild("NULL_MUSIC")
+if Old then
+	Old:Destroy()
+end
+
+--==================================================
+-- GUI
+--==================================================
+
+local Gui = Instance.new("ScreenGui")
+Gui.Name = "NULL_MUSIC"
+Gui.ResetOnSpawn = false
+Gui.IgnoreGuiInset = true
+Gui.Parent = Player.PlayerGui
+
+--==================================================
+-- MINI MENU (Tuzatildi va To'g'rilab qo'yildi)
+--==================================================
+
+local Mini = Instance.new("TextButton")
+Mini.Name = "MiniMenu"
+Mini.Size = UDim2.fromOffset(148, 42)
+Mini.Position = UDim2.new(0.5, -74, 0, 15)
+Mini.BackgroundColor3 = BLACK
+Mini.Text = ""
+Mini.AutoButtonColor = false
+Mini.Visible = false
+Mini.ZIndex = 5
+Mini.Parent = Gui
+
+local MiniCorner = Instance.new("UICorner")
+MiniCorner.CornerRadius = UDim.new(0, 10)
+MiniCorner.Parent = Mini
+
+local MiniStroke = Instance.new("UIStroke")
+MiniStroke.Color = RED
+MiniStroke.Thickness = 2
+MiniStroke.Parent = Mini
+
+local LeftLine = Instance.new("Frame")
+LeftLine.Size = UDim2.fromOffset(4, 25)
+LeftLine.Position = UDim2.fromOffset(8, 8)
+LeftLine.BackgroundColor3 = RED
+LeftLine.BorderSizePixel = 0
+LeftLine.ZIndex = 6
+LeftLine.Parent = Mini
+
+local LeftLineCorner = Instance.new("UICorner")
+LeftLineCorner.CornerRadius = UDim.new(1, 0)
+LeftLineCorner.Parent = LeftLine
+
+local RightLine = Instance.new("Frame")
+RightLine.Size = UDim2.fromOffset(4, 25)
+RightLine.Position = UDim2.new(1, -12, 0, 8)
+RightLine.BackgroundColor3 = RED
+RightLine.BorderSizePixel = 0
+RightLine.ZIndex = 6
+RightLine.Parent = Mini
+
+local RightLineCorner = Instance.new("UICorner")
+RightLineCorner.CornerRadius = UDim.new(1, 0)
+RightLineCorner.Parent = RightLine
+
+local MiniText = Instance.new("TextLabel")
+MiniText.Size = UDim2.new(1, -35, 1, 0)
+MiniText.Position = UDim2.fromOffset(17, 0)
+MiniText.BackgroundTransparency = 1
+MiniText.Text = "NULL MUSIC +"
+MiniText.TextColor3 = WHITE
+MiniText.TextSize = 13
+MiniText.Font = Enum.Font.GothamBlack
+MiniText.ZIndex = 6
+MiniText.Parent = Mini
+
+--==================================================
+-- MAIN MENU
+--==================================================
+
+local Main = Instance.new("Frame")
+Main.Name = "Main"
+Main.Size = UDim2.fromOffset(390, 315)
+Main.Position = UDim2.new(0.5, -195, 0.5, -157)
+Main.BackgroundColor3 = BLACK
+Main.BorderSizePixel = 0
+Main.Parent = Gui
+
+local MainCorner = Instance.new("UICorner")
+MainCorner.CornerRadius = UDim.new(0, 17)
+MainCorner.Parent = Main
+
+local MainStroke = Instance.new("UIStroke")
+MainStroke.Color = RED
+MainStroke.Thickness = 2
+MainStroke.Parent = Main
+
+local Glow = Instance.new("UIStroke")
+Glow.Color = RED
+Glow.Thickness = 6
+Glow.Transparency = 0.86
+Glow.Parent = Main
+
+--==================================================
+-- HEADER
+--==================================================
+
+local Header = Instance.new("Frame")
+Header.Size = UDim2.new(1, -14, 0, 54)
+Header.Position = UDim2.fromOffset(7, 7)
+Header.BackgroundColor3 = DARK
+Header.BorderSizePixel = 0
+Header.Parent = Main
+
+local HeaderCorner = Instance.new("UICorner")
+HeaderCorner.CornerRadius = UDim.new(0, 13)
+HeaderCorner.Parent = Header
+
+local HeaderStroke = Instance.new("UIStroke")
+HeaderStroke.Color = RED2
+HeaderStroke.Thickness = 1
+HeaderStroke.Parent = Header
+
+--==================================================
+-- LIGHTS
+--==================================================
+
+local function MakeLight(Color, X)
+	local Light = Instance.new("Frame")
+	Light.Size = UDim2.fromOffset(11, 11)
+	Light.Position = UDim2.fromOffset(X, 21)
+	Light.BackgroundColor3 = Color
+	Light.BorderSizePixel = 0
+	Light.Parent = Header
+
+	local Corner = Instance.new("UICorner")
+	Corner.CornerRadius = UDim.new(1, 0)
+	Corner.Parent = Light
+
+	local Stroke = Instance.new("UIStroke")
+	Stroke.Color = Color
+	Stroke.Thickness = 2
+	Stroke.Transparency = 0.2
+	Stroke.Parent = Light
+end
+
+MakeLight(GREEN, 14)
+MakeLight(YELLOW, 31)
+MakeLight(RED, 48)
+
+--==================================================
+-- TITLE
+--==================================================
+
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.fromOffset(180, 45)
+Title.Position = UDim2.new(0.5, -90, 0, 3)
+Title.BackgroundTransparency = 1
+Title.Text = "NULL MUSIC"
+Title.TextColor3 = RED
+Title.TextSize = 24
+Title.Font = Enum.Font.SciFi
+Title.TextStrokeColor3 = Color3.fromRGB(80, 0, 10)
+Title.TextStrokeTransparency = 0.25
+Title.Parent = Header
+
+--==================================================
+-- LOCK / UNLOCK
+--==================================================
+
+local LockButton = Instance.new("TextButton")
+LockButton.Name = "LockButton"
+LockButton.Size = UDim2.fromOffset(88, 31)
+LockButton.Position = UDim2.new(1, -126, 0, 12)
+LockButton.BackgroundColor3 = DARK2
+LockButton.Text = "UNLOCK 🔓"
+LockButton.TextColor3 = WHITE
+LockButton.TextSize = 11
+LockButton.Font = Enum.Font.GothamBold
+LockButton.AutoButtonColor = false
+LockButton.Parent = Header
+
+local LockCorner = Instance.new("UICorner")
+LockCorner.CornerRadius = UDim.new(0, 9)
+LockCorner.Parent = LockButton
+
+local LockStroke = Instance.new("UIStroke")
+LockStroke.Color = RED
+LockStroke.Thickness = 1.5
+LockStroke.Parent = LockButton
+
+--==================================================
+-- X BUTTON
+--==================================================
+
+local CloseButton = Instance.new("TextButton")
+CloseButton.Name = "CloseButton"
+CloseButton.Size = UDim2.fromOffset(27, 31)
+CloseButton.Position = UDim2.new(1, -32, 0, 12)
+CloseButton.BackgroundColor3 = DARK2
+CloseButton.Text = "×"
+CloseButton.TextColor3 = RED
+CloseButton.TextSize = 23
+CloseButton.Font = Enum.Font.GothamBold
+CloseButton.AutoButtonColor = false
+CloseButton.Parent = Header
+
+local CloseCorner = Instance.new("UICorner")
+CloseCorner.CornerRadius = UDim.new(0, 8)
+CloseCorner.Parent = CloseButton
+
+local CloseStroke = Instance.new("UIStroke")
+CloseStroke.Color = RED
+CloseStroke.Thickness = 1.5
+CloseStroke.Parent = CloseButton
+
+--==================================================
+-- MICROPHONE
+--==================================================
+
+local function CreateMic(IsLeft)
+	local Holder = Instance.new("Frame")
+	Holder.Size = UDim2.fromOffset(42, 100)
+	Holder.BackgroundTransparency = 1
+	Holder.Parent = Main
+
+	if IsLeft then
+		Holder.Position = UDim2.new(0, -21, 0, 112)
+	else
+		Holder.Position = UDim2.new(1, -21, 0, 112)
+	end
+
+	local Mic = Instance.new("Frame")
+	Mic.Size = UDim2.fromOffset(25, 52)
+	Mic.Position = UDim2.fromOffset(8, 0)
+	Mic.BackgroundColor3 = Color3.fromRGB(27, 27, 32)
+	Mic.BorderSizePixel = 0
+	Mic.Parent = Holder
+
+	local MicCorner = Instance.new("UICorner")
+	MicCorner.CornerRadius = UDim.new(1, 0)
+	MicCorner.Parent = Mic
+
+	local MicStroke = Instance.new("UIStroke")
+	MicStroke.Color = RED
+	MicStroke.Thickness = 2
+	MicStroke.Parent = Mic
+
+	local Top = Instance.new("Frame")
+	Top.Size = UDim2.new(1, -6, 0, 18)
+	Top.Position = UDim2.fromOffset(3, 4)
+	Top.BackgroundColor3 = Color3.fromRGB(55, 55, 62)
+	Top.BorderSizePixel = 0
+	Top.Parent = Mic
+
+	local TopCorner = Instance.new("UICorner")
+	TopCorner.CornerRadius = UDim.new(1, 0)
+	TopCorner.Parent = Top
+
+	for i = 1, 4 do
+		local Grill = Instance.new("Frame")
+		Grill.Size = UDim2.new(1, -6, 0, 2)
+		Grill.Position = UDim2.fromOffset(3, 7 + (i * 7))
+		Grill.BackgroundColor3 = Color3.fromRGB(95, 95, 102)
+		Grill.BorderSizePixel = 0
+		Grill.Parent = Mic
+
+		local GrillCorner = Instance.new("UICorner")
+		GrillCorner.CornerRadius = UDim.new(1, 0)
+		GrillCorner.Parent = Grill
+	end
+
+	local Ring = Instance.new("Frame")
+	Ring.Size = UDim2.fromOffset(9, 9)
+	Ring.Position = UDim2.new(0.5, -4, 0.5, 0)
+	Ring.BackgroundColor3 = RED
+	Ring.BorderSizePixel = 0
+	Ring.Parent = Mic
+
+	local RingCorner = Instance.new("UICorner")
+	RingCorner.CornerRadius = UDim.new(1, 0)
+	RingCorner.Parent = Ring
+
+	local Neck = Instance.new("Frame")
+	Neck.Size = UDim2.fromOffset(4, 24)
+	Neck.Position = UDim2.fromOffset(19, 49)
+	Neck.BackgroundColor3 = Color3.fromRGB(65, 65, 70)
+	Neck.BorderSizePixel = 0
+	Neck.Parent = Holder
+
+	local Stand = Instance.new("Frame")
+	Stand.Size = UDim2.fromOffset(3, 27)
+	Stand.Position = UDim2.fromOffset(20, 70)
+	Stand.BackgroundColor3 = RED
+	Stand.BorderSizePixel = 0
+	Stand.Parent = Holder
+
+	local Base = Instance.new("Frame")
+	Base.Size = UDim2.fromOffset(31, 3)
+	Base.Position = UDim2.fromOffset(5, 95)
+	Base.BackgroundColor3 = RED
+	Base.BorderSizePixel = 0
+	Base.Parent = Holder
+
+	local BaseCorner = Instance.new("UICorner")
+	BaseCorner.CornerRadius = UDim.new(1, 0)
+	BaseCorner.Parent = Base
+end
+
+CreateMic(true)
+CreateMic(false)
+
+--==================================================
+-- TABS
+--==================================================
+
+local Tabs = Instance.new("Frame")
+Tabs.Size = UDim2.new(1, -48, 0, 39)
+Tabs.Position = UDim2.fromOffset(24, 70)
+Tabs.BackgroundTransparency = 1
+Tabs.Parent = Main
+
+local TabLayout = Instance.new("UIListLayout")
+TabLayout.FillDirection = Enum.FillDirection.Horizontal
+TabLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+TabLayout.Padding = UDim.new(0, 5)
+TabLayout.Parent = Tabs
+
+local TabButtons = {}
+
+local function CreateTab(Name)
+	local Button = Instance.new("TextButton")
+	Button.Size = UDim2.fromOffset(112, 39)
+	Button.BackgroundColor3 = DARK2
+	Button.Text = Name
+	Button.TextColor3 = WHITE
+	Button.TextSize = 13
+	Button.Font = Enum.Font.GothamBold
+	Button.AutoButtonColor = false
+	Button.Parent = Tabs
+
+	local Corner = Instance.new("UICorner")
+	Corner.CornerRadius = UDim.new(0, 9)
+	Corner.Parent = Button
+
+	local Stroke = Instance.new("UIStroke")
+	Stroke.Color = RED2
+	Stroke.Thickness = 1
+	Stroke.Parent = Button
+
+	TabButtons[Name] = Button
+end
+
+CreateTab("SONGS")
+CreateTab("PHONKS")
+CreateTab("ASMR")
+
+--==================================================
+-- SONG LIST
+--==================================================
+
+local List = Instance.new("Frame")
+List.Size = UDim2.new(1, -48, 0, 118)
+List.Position = UDim2.fromOffset(24, 116)
+List.BackgroundColor3 = Color3.fromRGB(5, 5, 8)
+List.BorderSizePixel = 0
+List.Parent = Main
+
+local ListCorner = Instance.new("UICorner")
+ListCorner.CornerRadius = UDim.new(0, 11)
+ListCorner.Parent = List
+
+local ListStroke = Instance.new("UIStroke")
+ListStroke.Color = RED2
+ListStroke.Thickness = 1
+ListStroke.Parent = List
+
+local Scroll = Instance.new("ScrollingFrame")
+Scroll.Size = UDim2.new(1, -6, 1, -6)
+Scroll.Position = UDim2.fromOffset(3, 3)
+Scroll.BackgroundTransparency = 1
+Scroll.BorderSizePixel = 0
+Scroll.ScrollBarThickness = 3
+Scroll.ScrollBarImageColor3 = RED
+Scroll.Parent = List
+
+local ListLayout = Instance.new("UIListLayout")
+ListLayout.Padding = UDim.new(0, 3)
+ListLayout.Parent = Scroll
+
+--==================================================
+-- SOUND
+--==================================================
+
+local Sound = Instance.new("Sound")
+Sound.Name = "NULL_MUSIC_PLAYER"
+Sound.Volume = 0.5
+Sound.Parent = SoundService
+
+--==================================================
+-- PLAYER BAR
+--==================================================
+
+local PlayerBar = Instance.new("Frame")
+PlayerBar.Size = UDim2.new(1, -48, 0, 61)
+PlayerBar.Position = UDim2.fromOffset(24, 240)
+PlayerBar.BackgroundColor3 = DARK
+PlayerBar.BorderSizePixel = 0
+PlayerBar.Parent = Main
+
+local PlayerCorner = Instance.new("UICorner")
+PlayerCorner.CornerRadius = UDim.new(0, 11)
+PlayerCorner.Parent = PlayerBar
+
+local PlayerStroke = Instance.new("UIStroke")
+PlayerStroke.Color = RED2
+PlayerStroke.Thickness = 1
+PlayerStroke.Parent = PlayerBar
+
+--==================================================
+-- CURRENT SONG
+--==================================================
+
+local CurrentSong = Instance.new("TextLabel")
+CurrentSong.Size = UDim2.fromOffset(110, 40)
+CurrentSong.Position = UDim2.fromOffset(8, 10)
+CurrentSong.BackgroundTransparency = 1
+CurrentSong.Text = "♪ du bist"
+CurrentSong.TextColor3 = WHITE
+CurrentSong.TextSize = 13
+CurrentSong.Font = Enum.Font.GothamBold
+CurrentSong.TextXAlignment = Enum.TextXAlignment.Left
+CurrentSong.TextTruncate = Enum.TextTruncate.AtEnd
+CurrentSong.Parent = PlayerBar
+
+--==================================================
+-- PREVIOUS
+--==================================================
+
+local Prev = Instance.new("TextButton")
+Prev.Size = UDim2.fromOffset(36, 36)
+Prev.Position = UDim2.new(0.5, -70, 0.5, -18)
+Prev.BackgroundColor3 = DARK2
+Prev.Text = "◀"
+Prev.TextColor3 = WHITE
+Prev.TextSize = 14
+Prev.Font = Enum.Font.GothamBold
+Prev.AutoButtonColor = false
+Prev.Parent = PlayerBar
+
+local PrevCorner = Instance.new("UICorner")
+PrevCorner.CornerRadius = UDim.new(1, 0)
+PrevCorner.Parent = Prev
+
+local PrevStroke = Instance.new("UIStroke")
+PrevStroke.Color = RED
+PrevStroke.Thickness = 1
+PrevStroke.Parent = Prev
+
+--==================================================
+-- PLAY
+--==================================================
+
+local Play = Instance.new("TextButton")
+Play.Size = UDim2.fromOffset(44, 44)
+Play.Position = UDim2.new(0.5, -22, 0.5, -22)
+Play.BackgroundColor3 = Color3.fromRGB(35, 5, 11)
+Play.Text = "▶"
+Play.TextColor3 = RED
+Play.TextSize = 19
+Play.Font = Enum.Font.GothamBlack
+Play.AutoButtonColor = false
+Play.Parent = PlayerBar
+
+local PlayCorner = Instance.new("UICorner")
+PlayCorner.CornerRadius = UDim.new(1, 0)
+PlayCorner.Parent = Play
+
+local PlayStroke = Instance.new("UIStroke")
+PlayStroke.Color = RED
+PlayStroke.Thickness = 2
+PlayStroke.Parent = Play
+
+--==================================================
+-- NEXT
+--==================================================
+
+local Next = Instance.new("TextButton")
+Next.Size = UDim2.fromOffset(36, 36)
+Next.Position = UDim2.new(0.5, 34, 0.5, -18)
+Next.BackgroundColor3 = DARK2
+Next.Text = "▶"
+Next.TextColor3 = WHITE
+Next.TextSize = 14
+Next.Font = Enum.Font.GothamBold
+Next.AutoButtonColor = false
+Next.Parent = PlayerBar
+
+local NextCorner = Instance.new("UICorner")
+NextCorner.CornerRadius = UDim.new(1, 0)
+NextCorner.Parent = Next
+
+local NextStroke = Instance.new("UIStroke")
+NextStroke.Color = RED
+NextStroke.Thickness = 1
+NextStroke.Parent = Next
+
+--==================================================
+-- TAB UPDATE
+--==================================================
+
+local function UpdateTabs()
+	for Name, Button in pairs(TabButtons) do
+		if Name == CurrentTab then
+			Button.BackgroundColor3 = Color3.fromRGB(50, 5, 14)
+			Button.TextColor3 = RED
+		else
+			Button.BackgroundColor3 = DARK2
+			Button.TextColor3 = WHITE
+		end
+	end
+end
+
+--==================================================
+-- LOAD SONG (STABLE URL HANDLER)
+--==================================================
+
+local function GetAsset(Url)
+	if Url == "" then return "" end
+	
+	if writefile and readfile and (getcustomasset or getsynasset) then
+		local fileName = "nullmusic_" .. math.random(10000, 99999) .. ".mp3"
+		local success, data = pcall(function() return game:HttpGet(Url) end)
+		if success and data then
+			local writeSuccess = pcall(function() writefile(fileName, data) end)
+			if writeSuccess then
+				local getAssetFunc = getcustomasset or getsynasset
+				local assetSuccess, result = pcall(function() return getAssetFunc(fileName) end)
+				if assetSuccess and result then
+					return result
+				end
+			end
+		end
+	end
+	
+	return Url
+end
+
+local function LoadSong(Index, AutoPlay)
+	local Songs = Music[CurrentTab]
+	if not Songs[Index] then return end
+
+	CurrentIndex = Index
+	local Data = Songs[Index]
+	CurrentSong.Text = "♪ " .. Data.Name
+
+	Sound:Stop()
+	
+	if Data.AssetId and Data.AssetId ~= "" then
+		Sound.SoundId = Data.AssetId
+	elseif Data.Url and Data.Url ~= "" then
+		Sound.SoundId = GetAsset(Data.Url)
+	else
+		Sound.SoundId = ""
+	end
+
+	if AutoPlay and Sound.SoundId ~= "" then
+		Sound:Play()
+		Playing = true
+		Play.Text = "Ⅱ"
+	else
+		Playing = false
+		Play.Text = "▶"
+	end
+end
+
+--==================================================
+-- REFRESH LIST
+--==================================================
+
+local function RefreshList()
+	for _, Child in ipairs(Scroll:GetChildren()) do
+		if Child:IsA("TextButton") then
+			Child:Destroy()
+		end
+	end
+
+	local Songs = Music[CurrentTab]
+
+	for Index, Data in ipairs(Songs) do
+		local Button = Instance.new("TextButton")
+		Button.Size = UDim2.new(1, -6, 0, 26)
+
+		if Index == CurrentIndex then
+			Button.BackgroundColor3 = Color3.fromRGB(45, 5, 13)
+			Button.TextColor3 = RED
+		else
+			Button.BackgroundColor3 = Color3.fromRGB(12, 12, 17)
+			Button.TextColor3 = WHITE
+		end
+
+		Button.Text = "   ♪  " .. Data.Name
+		Button.TextSize = 12
+		Button.Font = Enum.Font.GothamBold
+		Button.TextXAlignment = Enum.TextXAlignment.Left
+		Button.AutoButtonColor = false
+		Button.Parent = Scroll
+
+		local Corner = Instance.new("UICorner")
+		Corner.CornerRadius = UDim.new(0, 6)
+		Corner.Parent = Button
+
+		Button.MouseButton1Click:Connect(function()
+			CurrentIndex = Index
+			LoadSong(Index, true)
+			RefreshList()
+		end)
+	end
+
+	task.wait()
+	Scroll.CanvasSize = UDim2.fromOffset(0, ListLayout.AbsoluteContentSize.Y + 5)
+end
+
+--==================================================
+-- TAB EVENTS
+--==================================================
+
+for Name, Button in pairs(TabButtons) do
+	Button.MouseButton1Click:Connect(function()
+		CurrentTab = Name
+		CurrentIndex = 1
+		Sound:Stop()
+		Playing = false
+		Play.Text = "▶"
+		LoadSong(1, false)
+		UpdateTabs()
+		RefreshList()
+	end)
+end
+
+--==================================================
+-- PLAY / PAUSE
+--==================================================
+
+Play.MouseButton1Click:Connect(function()
+	local Songs = Music[CurrentTab]
+	local Data = Songs[CurrentIndex]
+	if not Data or ((not Data.Url or Data.Url == "") and (not Data.AssetId or Data.AssetId == "")) then return end
+
+	if Playing then
+		Sound:Pause()
+		Playing = false
+		Play.Text = "▶"
+	else
+		if Sound.SoundId == "" then
+			LoadSong(CurrentIndex, true)
+		else
+			if Sound.TimePosition > 0 then
+				Sound:Resume()
+			else
+				Sound:Play()
+			end
+		end
+		Playing = true
+		Play.Text = "Ⅱ"
+	end
+end)
+
+--==================================================
+-- NEXT
+--==================================================
+
+Next.MouseButton1Click:Connect(function()
+	local Songs = Music[CurrentTab]
+	CurrentIndex += 1
+	if CurrentIndex > #Songs then
+		CurrentIndex = 1
+	end
+	LoadSong(CurrentIndex, true)
+	RefreshList()
+end)
+
+--==================================================
+-- PREVIOUS
+--==================================================
+
+Prev.MouseButton1Click:Connect(function()
+	local Songs = Music[CurrentTab]
+	CurrentIndex -= 1
+	if CurrentIndex < 1 then
+		CurrentIndex = #Songs
+	end
+	LoadSong(CurrentIndex, true)
+	RefreshList()
+end)
+
+--==================================================
+-- AUTO NEXT
+--==================================================
+
+Sound.Ended:Connect(function()
+	local Songs = Music[CurrentTab]
+	CurrentIndex += 1
+	if CurrentIndex > #Songs then
+		CurrentIndex = 1
+	end
+	LoadSong(CurrentIndex, true)
+	RefreshList()
+end)
+
+--==================================================
+-- LOCK / UNLOCK
+--==================================================
+
+local function UpdateLock()
+	if Locked then
+		LockButton.Text = "LOCK 🔒"
+		LockButton.BackgroundColor3 = Color3.fromRGB(55, 5, 12)
+	else
+		LockButton.Text = "UNLOCK 🔓"
+		LockButton.BackgroundColor3 = DARK2
+	end
+end
+
+LockButton.MouseButton1Click:Connect(function()
+	Locked = not Locked
+	UpdateLock()
+end)
+
+--==================================================
+-- BIG MENU DRAG
+--==================================================
+
+local Dragging = false
+local DragStart
+local StartPosition
+
+Header.InputBegan:Connect(function(Input)
+	if Locked then return end
+	if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
+		Dragging = true
+		DragStart = Input.Position
+		StartPosition = Main.Position
+	end
+end)
+
+UIS.InputChanged:Connect(function(Input)
+	if not Dragging then return end
+	if Locked then Dragging = false return end
+	if Input.UserInputType == Enum.UserInputType.MouseMovement or Input.UserInputType == Enum.UserInputType.Touch then
+		local Delta = Input.Position - DragStart
+		Main.Position = UDim2.new(
+			StartPosition.X.Scale, StartPosition.X.Offset + Delta.X,
+			StartPosition.Y.Scale, StartPosition.Y.Offset + Delta.Y
+		)
+	end
+end)
+
+UIS.InputEnded:Connect(function(Input)
+	if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
+		Dragging = false
+	end
+end)
+
+--==================================================
+-- BIG <-> MINI ANIMATIONS
+--==================================================
+
+local function OpenBigMenu()
+	Main.Position = UDim2.new(0.5, -195, 0.5, -157)
+	Mini.Visible = false
+	Main.Visible = true
+
+	local TargetSize = Main.Size
+	Main.Size = UDim2.fromOffset(148, 42)
+
+	TweenService:Create(
+		Main,
+		TweenInfo.new(0.38, Enum.EasingStyle.Back, Enum.EasingDirection.Out),
+		{Size = TargetSize}
+	):Play()
+end
+
+local function MinimizeMenu()
+	Main.Visible = false
+	Mini.Position = UDim2.new(0.5, -74, 0, 15)
+	Mini.Size = UDim2.fromOffset(15, 15)
+	Mini.Visible = true
+
+	TweenService:Create(
+		Mini,
+		TweenInfo.new(0.32, Enum.EasingStyle.Back, Enum.EasingDirection.Out),
+		{Size = UDim2.fromOffset(148, 42)}
+	):Play()
+end
+
+CloseButton.MouseButton1Click:Connect(function()
+	MinimizeMenu()
+end)
+
+Mini.MouseButton1Click:Connect(function()
+	OpenBigMenu()
+end)
+
+--==================================================
+-- MINI MENU DRAG
+--==================================================
+
+local MiniDragging = false
+local MiniDragStart
+local MiniStartPosition
+
+Mini.InputBegan:Connect(function(Input)
+	if Locked then return end
+	if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
+		MiniDragging = true
+		MiniDragStart = Input.Position
+		MiniStartPosition = Mini.Position
+	end
+end)
+
+UIS.InputChanged:Connect(function(Input)
+	if not MiniDragging then return end
+	if Locked then MiniDragging = false return end
+	if Input.UserInputType == Enum.UserInputType.MouseMovement or Input.UserInputType == Enum.UserInputType.Touch then
+		local Delta = Input.Position - MiniDragStart
+		Mini.Position = UDim2.new(
+			MiniStartPosition.X.Scale, MiniStartPosition.X.Offset + Delta.X,
+			MiniStartPosition.Y.Scale, MiniStartPosition.Y.Offset + Delta.Y
+		)
+	end
+end)
+
+UIS.InputEnded:Connect(function(Input)
+	if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
+		MiniDragging = false
+	end
+end)
+
+--==================================================
+-- START
+--==================================================
+
+UpdateLock()
+UpdateTabs()
+RefreshList()
+LoadSong(1, false)
+
+--==================================================
+-- INTRO
+--==================================================
+
+local FinalSize = Main.Size
+Main.Size = UDim2.fromOffset(340, 275)
+
+TweenService:Create(
+	Main,
+	TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out),
+	{Size = FinalSize}
+):Play()
